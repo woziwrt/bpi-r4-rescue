@@ -81,6 +81,15 @@ define Build/mt798x-gpt
 	rm $@.tmp
 endef
 
+define Build/mt798x-gpt-nvme
+	cp $@ $@.tmp 2>/dev/null || true
+	ptgen -g -o $@.tmp -a 1 -l 1024 \
+			-t 0x83 -N boot		-r	-p 63M@1M \
+			-t 0x2e -N production		-p $(CONFIG_TARGET_ROOTFS_PARTSIZE)M@64M
+	cat $@.tmp >> $@
+	rm $@.tmp
+endef
+
 # Variation of the normal partition table to account
 # for factory and mfgdata partition
 #
@@ -677,6 +686,7 @@ define Device/bananapi_bpi-r4-common
   ARTIFACTS := \
 	      emmc-gpt.bin emmc-preloader.bin emmc-bl31-uboot.fip \
 	      emmc-img.bin \
+	      nvme-img.bin \
 	      sdcard.img.gz \
 	      snand-preloader.bin snand-bl31-uboot.fip \
 	      snand-img.bin
@@ -686,6 +696,8 @@ define Device/bananapi_bpi-r4-common
   ARTIFACT/emmc-img.bin		:= mt798x-gpt emmc | \
 				  pad-to 17k | mt7988-bl2 emmc-comb | \
 				  pad-to 6656k | mt7988-bl31-uboot $$(DEVICE_NAME)-emmc | \
+				  pad-to 64M | append-image squashfs-sysupgrade.itb
+  ARTIFACT/nvme-img.bin		:= mt798x-gpt-nvme | \
 				  pad-to 64M | append-image squashfs-sysupgrade.itb
   ARTIFACT/snand-preloader.bin	:= mt7988-bl2 spim-nand-ubi-comb
   ARTIFACT/snand-bl31-uboot.fip	:= mt7988-bl31-uboot $$(DEVICE_NAME)-snand
